@@ -1100,10 +1100,10 @@
         // Coordinates accept digits, one decimal point, and an optional leading minus sign.
         $(function() {
             $('.coordinate-value').on('input', function() {
-                let value = this.value.replace(/[^0-9.\\-]/g, '');
+                let value = this.value.replace(/[^0-9.-]/g, '');
                 value = value.replace(/(?!^)-/g, '');
                 const dot = value.indexOf('.');
-                if (dot !== -1) value = value.slice(0, dot + 1) + value.slice(dot + 1).replace(/\\./g, '');
+                if (dot !== -1) value = value.slice(0, dot + 1) + value.slice(dot + 1).replace(/\./g, '');
                 this.value = value;
             });
         });
@@ -1114,7 +1114,7 @@
             const h = document.getElementById('coordinate-h').value.trim();
             const status = document.getElementById('coordinates-status');
             const button = document.getElementById('set-coordinates-button');
-            const numberPattern = /^-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/;
+            const numberPattern = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
 
             if (!b || !l || !h) {
                 status.className = 'small mt-2 text-danger';
@@ -1142,7 +1142,7 @@
                 'rtcm1125 1',
                 'rtcm1230 10',
                 'gngga com 2 10'
-            ].join('\\r\\n');
+            ].join('\r\n');
 
             button.disabled = true;
             status.className = 'small mt-2 text-muted';
