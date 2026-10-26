@@ -880,12 +880,36 @@
                                 </div>
                             </div>
                             <hr class="my-4">
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <h5>Координаты базовой станции</h5>
+                                    <div class="form-row align-items-end">
+                                        <div class="col">
+                                            <label for="coordinate-b">B</label>
+                                            <input type="text" inputmode="decimal" id="coordinate-b" class="form-control coordinate-value" placeholder="B" autocomplete="off">
+                                        </div>
+                                        <div class="col">
+                                            <label for="coordinate-l">L</label>
+                                            <input type="text" inputmode="decimal" id="coordinate-l" class="form-control coordinate-value" placeholder="L" autocomplete="off">
+                                        </div>
+                                        <div class="col">
+                                            <label for="coordinate-h">H</label>
+                                            <input type="text" inputmode="decimal" id="coordinate-h" class="form-control coordinate-value" placeholder="H" autocomplete="off">
+                                        </div>
+                                        <div class="col-auto">
+                                            <button type="button" id="set-coordinates-button" class="btn btn-primary" onclick="setBaseCoordinates()">Задать координаты</button>
+                                        </div>
+                                    </div>
+                                    <div id="coordinates-status" class="small mt-2" role="status" aria-live="polite"></div>
+                                </div>
+                            </div>
+                            <hr class="my-4">
                             <div class="row">
                                 <div class="col">
                                     <label>Serial Command</label>
                                     <div class="input-group">
                                         <input type="text" id="serial_command" class="form-control" placeholder="Enter command">
-                                        <button type="button" class="btn btn-primary" onclick="sendSerialCommand()">Send</button>
+                                        <button type="button" id="send-serial-button" class="btn btn-primary" onclick="sendSerialCommand()">Send</button>
                                     </div>
                                 </div>
                             </div>
@@ -1073,13 +1097,83 @@
         </div>
     </div>
         <script>
+        // Coordinates accept digits, one decimal point, and an optional leading minus sign.
+        $(function() {
+            $('.coordinate-value').on('input', function() {
+                let value = this.value.replace(/[^0-9.-]/g, '');
+                value = value.replace(/(?!^)-/g, '');
+                const dot = value.indexOf('.');
+                if (dot !== -1) value = value.slice(0, dot + 1) + value.slice(dot + 1).replace(/\./g, '');
+                this.value = value;
+            });
+        });
+
+        function setBaseCoordinates() {
+            const b = document.getElementById('coordinate-b').value.trim();
+            const l = document.getElementById('coordinate-l').value.trim();
+            const h = document.getElementById('coordinate-h').value.trim();
+            const status = document.getElementById('coordinates-status');
+            const button = document.getElementById('set-coordinates-button');
+            const numberPattern = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
+
+            if (!b || !l || !h) {
+                status.className = 'small mt-2 text-danger';
+                status.textContent = 'Ошибка: заполните все три поля координат B, L и H.';
+                alert('Ошибка: заполните все три поля координат B, L и H.');
+                return;
+            }
+            if (![b, l, h].every(value => numberPattern.test(value))) {
+                status.className = 'small mt-2 text-danger';
+                status.textContent = 'Ошибка: координаты должны быть числовыми значениями с точкой в качестве десятичного разделителя.';
+                alert(status.textContent);
+                return;
+            }
+
+            const commands = [
+                'unlog com1',
+                'unlog com2',
+                'unlog com3',
+                'mode base ' + b + ' ' + l + ' ' + h,
+                'rtcm1006 5',
+                'rtcm1033 10',
+                'rtcm1075 1',
+                'rtcm1085 1',
+                'rtcm1095 1',
+                'rtcm1125 1',
+                'rtcm1230 10',
+                'gngga com 2 10'
+            ].join('\r\n');
+
+            button.disabled = true;
+            status.className = 'small mt-2 text-muted';
+            status.textContent = 'Отправка команд в UART...';
+            $.ajax({
+                url: '/send_serial',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ command: commands }),
+                success: function() {
+                    status.className = 'small mt-2 text-success';
+                    status.textContent = 'Команды настройки базовой станции отправлены в UART.';
+                },
+                error: function(xhr) {
+                    status.className = 'small mt-2 text-danger';
+                    status.textContent = 'Ошибка отправки команд: ' + (xhr.responseText || 'неизвестная ошибка');
+                    alert(status.textContent);
+                },
+                complete: function() {
+                    button.disabled = false;
+                }
+            });
+        }
+
         function sendSerialCommand() {
             const command = document.getElementById('serial_command').value;
             if (command.trim() === '') {
                 alert('Please enter a command.');
                 return;
             }
-            const sendButton = document.querySelector('.btn-primary');
+            const sendButton = document.getElementById('send-serial-button');
             sendButton.disabled = true;
             $.ajax({
                 url: '/send_serial',
