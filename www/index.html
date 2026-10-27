@@ -1103,6 +1103,25 @@
                 if (dot !== -1) value = value.slice(0, dot + 1) + value.slice(dot + 1).replace(/\./g, '');
                 this.value = value;
             });
+
+            // Clear coordinates until the receiver's MODE response has been checked.
+            $('#coordinate-b, #coordinate-l, #coordinate-h').val('');
+            let modePollAttempts = 0;
+            const modePoll = setInterval(function() {
+                modePollAttempts++;
+                $.getJSON('/base_coordinates').done(function(data) {
+                    if (!data.received) return;
+
+                    clearInterval(modePoll);
+                    // Only a numeric "MODE BASE B L H" response fills the fields.
+                    // MODE ROVER and MODE BASE TIME leave all fields empty.
+                    $('#coordinate-b').val(data.b || '');
+                    $('#coordinate-l').val(data.l || '');
+                    $('#coordinate-h').val(data.h || '');
+                });
+
+                if (modePollAttempts >= 30) clearInterval(modePoll);
+            }, 1000);
         });
 
         function setBaseCoordinates() {
