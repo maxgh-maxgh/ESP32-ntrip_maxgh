@@ -882,34 +882,30 @@
                             <hr class="my-4">
                             <div class="row mb-3">
                                 <div class="col">
-                                    <h5>Base Station Coordinates</h5>
-                                    <div class="form-row align-items-end">
-                                        <div class="col">
-                                            <label for="coordinate-b">Latitude (B)</label>
-                                            <input type="text" inputmode="decimal" id="coordinate-b" class="form-control coordinate-value" placeholder="Latitude" autocomplete="off">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="mb-0">Base Station Coordinates</h5>
                                         </div>
-                                        <div class="col">
-                                            <label for="coordinate-l">Longitude (L)</label>
-                                            <input type="text" inputmode="decimal" id="coordinate-l" class="form-control coordinate-value" placeholder="Longitude" autocomplete="off">
+                                        <div class="card-body">
+                                            <div class="form-row align-items-end">
+                                                <div class="col-md">
+                                                    <label for="coordinate-b">Latitude (B)</label>
+                                                    <input type="text" inputmode="decimal" id="coordinate-b" class="form-control coordinate-value" placeholder="Latitude" autocomplete="off">
+                                                </div>
+                                                <div class="col-md">
+                                                    <label for="coordinate-l">Longitude (L)</label>
+                                                    <input type="text" inputmode="decimal" id="coordinate-l" class="form-control coordinate-value" placeholder="Longitude" autocomplete="off">
+                                                </div>
+                                                <div class="col-md">
+                                                    <label for="coordinate-h">Height (H)</label>
+                                                    <input type="text" inputmode="decimal" id="coordinate-h" class="form-control coordinate-value" placeholder="Height" autocomplete="off">
+                                                </div>
+                                                <div class="col-md-auto mt-3 mt-md-0">
+                                                    <button type="button" id="set-coordinates-button" class="btn btn-primary" onclick="setBaseCoordinates()">Set Coordinates</button>
+                                                </div>
+                                            </div>
+                                            <div id="coordinates-status" class="small mt-2" role="status" aria-live="polite"></div>
                                         </div>
-                                        <div class="col">
-                                            <label for="coordinate-h">Height (H)</label>
-                                            <input type="text" inputmode="decimal" id="coordinate-h" class="form-control coordinate-value" placeholder="Height" autocomplete="off">
-                                        </div>
-                                        <div class="col-auto">
-                                            <button type="button" id="set-coordinates-button" class="btn btn-primary" onclick="setBaseCoordinates()">Set Coordinates</button>
-                                        </div>
-                                    </div>
-                                    <div id="coordinates-status" class="small mt-2" role="status" aria-live="polite"></div>
-                                </div>
-                            </div>
-                            <hr class="my-4">
-                            <div class="row">
-                                <div class="col">
-                                    <label>Serial Command</label>
-                                    <div class="input-group">
-                                        <input type="text" id="serial_command" class="form-control" placeholder="Enter command">
-                                        <button type="button" id="send-serial-button" class="btn btn-primary" onclick="sendSerialCommand()">Send</button>
                                     </div>
                                 </div>
                             </div>
@@ -1141,8 +1137,9 @@
                 'rtcm1095 1',
                 'rtcm1125 1',
                 'rtcm1230 10',
-                'gngga com 2 10'
-            ].join('\r\n');
+                'gngga com2 10',
+                'saveconfig'
+            ].join('\\r\\n');
 
             button.disabled = true;
             status.className = 'small mt-2 text-muted';
