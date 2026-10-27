@@ -1,6 +1,7 @@
 # ESP32 NTRIP Duo
 
 Dual NTRIP caster client firmware for ESP32. Reads RTCM3 correction data from a [Unicore UM980](https://en.unicorecomm.com/products/detail/24) GNSS receiver and pushes it simultaneously to two NTRIP casters (e.g. RTK2go and Onocoy).
+Added the ability to set and read base coordinates based on the UM980 GNSS receiver.
 
 Based on [nebkat/esp32-xbee](https://github.com/nebkat/esp32-xbee), heavily modified.
 
