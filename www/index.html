@@ -1118,13 +1118,13 @@
 
             if (!b || !l || !h) {
                 status.className = 'small mt-2 text-danger';
-                status.textContent = 'Ошибка: заполните все три поля координат B, L и H.';
-                alert('Ошибка: заполните все три поля координат B, L и H.');
+                status.textContent = 'Error: Please fill in all three coordinate fields (B, L, and H).';
+                alert('Error: Please fill in all three coordinate fields (B, L, and H).');
                 return;
             }
             if (![b, l, h].every(value => numberPattern.test(value))) {
                 status.className = 'small mt-2 text-danger';
-                status.textContent = 'Ошибка: координаты должны быть числовыми значениями с точкой в качестве десятичного разделителя.';
+                status.textContent = 'Error: Coordinates must be numeric values using a dot as the decimal separator.';
                 alert(status.textContent);
                 return;
             }
@@ -1146,7 +1146,7 @@
 
             button.disabled = true;
             status.className = 'small mt-2 text-muted';
-            status.textContent = 'Отправка команд в UART...';
+            status.textContent = 'Sending commands to UART...';
             $.ajax({
                 url: '/send_serial',
                 type: 'POST',
@@ -1154,11 +1154,11 @@
                 data: JSON.stringify({ command: commands }),
                 success: function() {
                     status.className = 'small mt-2 text-success';
-                    status.textContent = 'Команды настройки базовой станции отправлены в UART.';
+                    status.textContent = 'Base station configuration commands sent to UART.';
                 },
                 error: function(xhr) {
                     status.className = 'small mt-2 text-danger';
-                    status.textContent = 'Ошибка отправки команд: ' + (xhr.responseText || 'неизвестная ошибка');
+                    status.textContent = 'Failed to send commands: ' + (xhr.responseText || 'Unknown error');
                     alert(status.textContent);
                 },
                 complete: function() {
