@@ -17,6 +17,8 @@ int uart_log(char *buffer, size_t len);
 int uart_nmea(const char *fmt, ...);
 int uart_write(char *buffer, size_t len);
 
+void uart_query_mode(void);
+
 void uart_get_mode_response(bool *received, char *b, size_t b_size,
                             char *l, size_t l_size, char *h, size_t h_size);
 
