@@ -1202,6 +1202,23 @@
                 return;
             }
 
+            const latitude = Number(b);
+            const longitude = Number(l);
+
+            if (latitude < -90 || latitude > 90) {
+                status.className = 'small mt-2 text-danger';
+                status.textContent = 'Error: Latitude B must be between -90 and 90 degrees.';
+                alert(status.textContent);
+                return;
+            }
+
+            if (longitude < -180 || longitude > 180) {
+                status.className = 'small mt-2 text-danger';
+                status.textContent = 'Error: Longitude L must be between -180 and 180 degrees.';
+                alert(status.textContent);
+                return;
+            }
+
             const commands = [
                 'unlog com1',
                 'unlog com2',
