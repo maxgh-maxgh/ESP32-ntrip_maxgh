@@ -879,40 +879,7 @@
                                     <input type="number" name="uart_cts_pin" data-disable-if="input[type='checkbox'][name='uart_fc_cts']" class="form-control" placeholder="19" value="19" required>
                                 </div>
                             </div>
-                            <hr class="my-4">
-                            <div class="row mb-3">
-                                <div class="col">
-                                    <h5>Координаты базовой станции</h5>
-                                    <div class="form-row align-items-end">
-                                        <div class="col">
-                                            <label for="coordinate-b">B</label>
-                                            <input type="text" inputmode="decimal" id="coordinate-b" class="form-control coordinate-value" placeholder="B" autocomplete="off">
-                                        </div>
-                                        <div class="col">
-                                            <label for="coordinate-l">L</label>
-                                            <input type="text" inputmode="decimal" id="coordinate-l" class="form-control coordinate-value" placeholder="L" autocomplete="off">
-                                        </div>
-                                        <div class="col">
-                                            <label for="coordinate-h">H</label>
-                                            <input type="text" inputmode="decimal" id="coordinate-h" class="form-control coordinate-value" placeholder="H" autocomplete="off">
-                                        </div>
-                                        <div class="col-auto">
-                                            <button type="button" id="set-coordinates-button" class="btn btn-primary" onclick="setBaseCoordinates()">Задать координаты</button>
-                                        </div>
-                                    </div>
-                                    <div id="coordinates-status" class="small mt-2" role="status" aria-live="polite"></div>
-                                </div>
-                            </div>
-                            <hr class="my-4">
-                            <div class="row">
-                                <div class="col">
-                                    <label>Serial Command</label>
-                                    <div class="input-group">
-                                        <input type="text" id="serial_command" class="form-control" placeholder="Enter command">
-                                        <button type="button" id="send-serial-button" class="btn btn-primary" onclick="sendSerialCommand()">Send</button>
-                                    </div>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -922,6 +889,37 @@
                     <input type="submit" class="form-control">
                 </div>
             </div>
+                            <hr class="my-4">
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="mb-0">Base Station Coordinates</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="form-row align-items-end">
+                                                <div class="col-md">
+                                                    <label for="coordinate-b">Latitude (B)</label>
+                                                    <input type="text" inputmode="decimal" id="coordinate-b" class="form-control coordinate-value" placeholder="Latitude" autocomplete="off">
+                                                </div>
+                                                <div class="col-md">
+                                                    <label for="coordinate-l">Longitude (L)</label>
+                                                    <input type="text" inputmode="decimal" id="coordinate-l" class="form-control coordinate-value" placeholder="Longitude" autocomplete="off">
+                                                </div>
+                                                <div class="col-md">
+                                                    <label for="coordinate-h">Height (H)</label>
+                                                    <input type="text" inputmode="decimal" id="coordinate-h" class="form-control coordinate-value" placeholder="Height" autocomplete="off">
+                                                </div>
+                                                <div class="col-md-auto mt-3 mt-md-0">
+                                                    <button type="button" id="query-coordinates-button" class="btn btn-secondary" onclick="queryBaseCoordinates()">Query</button>
+                                                    <button type="button" id="set-coordinates-button" class="btn btn-primary ml-2" onclick="setBaseCoordinates()">Set Coordinates</button>
+                                                </div>
+                                            </div>
+                                            <div id="coordinates-status" class="small mt-2" role="status" aria-live="polite"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
             <div class="row">
                 <div class="col-xl-6">
 
@@ -1106,7 +1104,82 @@
                 if (dot !== -1) value = value.slice(0, dot + 1) + value.slice(dot + 1).replace(/\./g, '');
                 this.value = value;
             });
+
+            // Clear coordinates until the receiver's MODE response has been checked.
+            $('#coordinate-b, #coordinate-l, #coordinate-h').val('');
+            let modePollAttempts = 0;
+            const modePoll = setInterval(function() {
+                modePollAttempts++;
+                $.getJSON('/base_coordinates').done(function(data) {
+                    if (!data.received) return;
+
+                    clearInterval(modePoll);
+                    // Only a numeric "MODE BASE B L H" response fills the fields.
+                    // MODE ROVER and MODE BASE TIME leave all fields empty.
+                    $('#coordinate-b').val(data.b || '');
+                    $('#coordinate-l').val(data.l || '');
+                    $('#coordinate-h').val(data.h || '');
+                });
+
+                if (modePollAttempts >= 30) clearInterval(modePoll);
+            }, 1000);
         });
+
+        function queryBaseCoordinates() {
+            const button = document.getElementById('query-coordinates-button');
+            const status = document.getElementById('coordinates-status');
+
+            // Clear previous values so a non-BASE response cannot leave stale coordinates visible.
+            $('#coordinate-b, #coordinate-l, #coordinate-h').val('');
+            button.disabled = true;
+            status.className = 'small mt-2 text-muted';
+            status.textContent = 'Querying coordinates from the device...';
+
+            $.ajax({
+                url: '/base_coordinates',
+                type: 'POST'
+            }).done(function() {
+                let attempts = 0;
+                let completed = false;
+
+                const pollForModeResponse = function() {
+                    $.getJSON('/base_coordinates').done(function(data) {
+                        if (!data.received) return;
+
+                        completed = true;
+                        $('#coordinate-b').val(data.b || '');
+                        $('#coordinate-l').val(data.l || '');
+                        $('#coordinate-h').val(data.h || '');
+
+                        status.className = 'small mt-2 ' +
+                            (data.b && data.l && data.h ? 'text-success' : 'text-muted');
+                        status.textContent = data.b && data.l && data.h
+                            ? 'Coordinates received from the device.'
+                            : 'Device responded, but no base coordinates are available.';
+                        button.disabled = false;
+                    }).always(function() {
+                        if (completed) return;
+
+                        attempts++;
+                        if (attempts >= 20) {
+                            completed = true;
+                            button.disabled = false;
+                            status.className = 'small mt-2 text-danger';
+                            status.textContent = 'No response to MODE was received. Please try again.';
+                            return;
+                        }
+
+                        setTimeout(pollForModeResponse, 250);
+                    });
+                };
+
+                pollForModeResponse();
+            }).fail(function(xhr) {
+                button.disabled = false;
+                status.className = 'small mt-2 text-danger';
+                status.textContent = 'Failed to query coordinates: ' + (xhr.responseText || 'Unknown error');
+            });
+        }
 
         function setBaseCoordinates() {
             const b = document.getElementById('coordinate-b').value.trim();
@@ -1118,13 +1191,30 @@
 
             if (!b || !l || !h) {
                 status.className = 'small mt-2 text-danger';
-                status.textContent = 'Ошибка: заполните все три поля координат B, L и H.';
-                alert('Ошибка: заполните все три поля координат B, L и H.');
+                status.textContent = 'Error: Please fill in all three coordinate fields (B, L, and H).';
+                alert('Error: Please fill in all three coordinate fields (B, L, and H).');
                 return;
             }
             if (![b, l, h].every(value => numberPattern.test(value))) {
                 status.className = 'small mt-2 text-danger';
-                status.textContent = 'Ошибка: координаты должны быть числовыми значениями с точкой в качестве десятичного разделителя.';
+                status.textContent = 'Error: Coordinates must be numeric values using a dot as the decimal separator.';
+                alert(status.textContent);
+                return;
+            }
+
+            const latitude = Number(b);
+            const longitude = Number(l);
+
+            if (latitude < -90 || latitude > 90) {
+                status.className = 'small mt-2 text-danger';
+                status.textContent = 'Error: Latitude B must be between -90 and 90 degrees.';
+                alert(status.textContent);
+                return;
+            }
+
+            if (longitude < -180 || longitude > 180) {
+                status.className = 'small mt-2 text-danger';
+                status.textContent = 'Error: Longitude L must be between -180 and 180 degrees.';
                 alert(status.textContent);
                 return;
             }
@@ -1141,12 +1231,13 @@
                 'rtcm1095 1',
                 'rtcm1125 1',
                 'rtcm1230 10',
-                'gngga com 2 10'
+                'gngga com2 10',
+                'saveconfig'
             ].join('\r\n');
 
             button.disabled = true;
             status.className = 'small mt-2 text-muted';
-            status.textContent = 'Отправка команд в UART...';
+            status.textContent = 'Sending commands to UART...';
             $.ajax({
                 url: '/send_serial',
                 type: 'POST',
@@ -1154,11 +1245,11 @@
                 data: JSON.stringify({ command: commands }),
                 success: function() {
                     status.className = 'small mt-2 text-success';
-                    status.textContent = 'Команды настройки базовой станции отправлены в UART.';
+                    status.textContent = 'Base station configuration commands sent to UART.';
                 },
                 error: function(xhr) {
                     status.className = 'small mt-2 text-danger';
-                    status.textContent = 'Ошибка отправки команд: ' + (xhr.responseText || 'неизвестная ошибка');
+                    status.textContent = 'Failed to send commands: ' + (xhr.responseText || 'Unknown error');
                     alert(status.textContent);
                 },
                 complete: function() {

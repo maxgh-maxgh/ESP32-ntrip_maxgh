@@ -63,6 +63,14 @@ static void sntp_time_set_handler(struct timeval *tv) {
     ESP_LOGI(TAG, "Synced time from SNTP");
 }
 
+static void mode_query_task(void *ctx) {
+    vTaskDelay(pdMS_TO_TICKS(10000));
+    char command[] = "MODE\r\n";
+    uart_write(command, sizeof(command) - 1);
+    ESP_LOGI(TAG, "Sent MODE query over UART after startup delay");
+    vTaskDelete(NULL);
+}
+
 void app_main()
 {
     status_led_init();
@@ -83,6 +91,7 @@ void app_main()
 
     config_init();
     uart_init();
+    xTaskCreate(mode_query_task, "mode_query", 2048, NULL, TASK_PRIORITY_UART, NULL);
 
     esp_reset_reason_t reset_reason = esp_reset_reason();
 
