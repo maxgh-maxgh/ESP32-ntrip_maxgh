@@ -937,6 +937,23 @@ static esp_err_t config_post_handler(httpd_req_t *req) {
     return json_response(req, root);
 }
 
+static esp_err_t base_coordinates_get_handler(httpd_req_t *req) {
+    if (check_auth(req) == ESP_FAIL) return ESP_FAIL;
+
+    bool received = false;
+    char b[32] = "";
+    char l[32] = "";
+    char h[32] = "";
+    uart_get_mode_response(&received, b, sizeof(b), l, sizeof(l), h, sizeof(h));
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddBoolToObject(root, "received", received);
+    cJSON_AddStringToObject(root, "b", b);
+    cJSON_AddStringToObject(root, "l", l);
+    cJSON_AddStringToObject(root, "h", h);
+    return json_response(req, root);
+}
+
 static esp_err_t serial_post_handler(httpd_req_t *req) {
     if (check_auth(req) == ESP_FAIL) return ESP_FAIL;
 
@@ -1146,7 +1163,7 @@ static httpd_handle_t web_server_start(void)
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
-    config.max_uri_handlers = 11;
+    config.max_uri_handlers = 12;
 
     // Start the httpd server
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
@@ -1162,6 +1179,7 @@ static httpd_handle_t web_server_start(void)
         register_uri_handler(server, "/wifi/scan", HTTP_GET, wifi_scan_get_handler);
 
         register_uri_handler(server, "/send_serial", HTTP_POST, serial_post_handler);
+        register_uri_handler(server, "/base_coordinates", HTTP_GET, base_coordinates_get_handler);
 
         register_uri_handler(server, "/ota", HTTP_GET, ota_page_handler);
         register_uri_handler(server, "/ota", HTTP_POST, ota_upload_handler);
