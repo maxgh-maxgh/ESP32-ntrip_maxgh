@@ -38,7 +38,7 @@ Based on [nebkat/esp32-xbee](https://github.com/nebkat/esp32-xbee), heavily modi
 
 ## Pre-built firmware
 
-**Use the [latest release](https://github.com/designer2k2/esp32-ntrip-DUO/releases/latest)** — binaries are built automatically by CI and attached to every release:
+**Use the [latest release]([https://github.com/designer2k2/esp32-ntrip-DUO/releases/latest](https://github.com/maxgh-maxgh/ESP32-ntrip_maxgh/releases/)** — binaries are built automatically by CI and attached to every release:
 
 | File | Use for |
 |------|---------|
