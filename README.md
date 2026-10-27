@@ -62,8 +62,9 @@ The `firmware/` folder in the repository tracks the last manually committed buil
 ### Build
 
 ```cmd
+python -c "import gzip,pathlib; p=pathlib.Path('www/index.html'); pathlib.Path('www/index.html.gz').write_bytes(gzip.compress(p.read_bytes(), mtime=0))"
 idf.py build
-idf.py merge-bin -o firmware\ESP32-NTRIP-DUO-flash.bin
+idf.py merge-bin -o ESP32-NTRIP-DUO-flash.bin
 ```
 
 Output files:
