@@ -882,22 +882,22 @@
                             <hr class="my-4">
                             <div class="row mb-3">
                                 <div class="col">
-                                    <h5>Координаты базовой станции</h5>
+                                    <h5>Base Station Coordinates</h5>
                                     <div class="form-row align-items-end">
                                         <div class="col">
-                                            <label for="coordinate-b">B</label>
-                                            <input type="text" inputmode="decimal" id="coordinate-b" class="form-control coordinate-value" placeholder="B" autocomplete="off">
+                                            <label for="coordinate-b">Latitude (B)</label>
+                                            <input type="text" inputmode="decimal" id="coordinate-b" class="form-control coordinate-value" placeholder="Latitude" autocomplete="off">
                                         </div>
                                         <div class="col">
-                                            <label for="coordinate-l">L</label>
-                                            <input type="text" inputmode="decimal" id="coordinate-l" class="form-control coordinate-value" placeholder="L" autocomplete="off">
+                                            <label for="coordinate-l">Longitude (L)</label>
+                                            <input type="text" inputmode="decimal" id="coordinate-l" class="form-control coordinate-value" placeholder="Longitude" autocomplete="off">
                                         </div>
                                         <div class="col">
-                                            <label for="coordinate-h">H</label>
-                                            <input type="text" inputmode="decimal" id="coordinate-h" class="form-control coordinate-value" placeholder="H" autocomplete="off">
+                                            <label for="coordinate-h">Height (H)</label>
+                                            <input type="text" inputmode="decimal" id="coordinate-h" class="form-control coordinate-value" placeholder="Height" autocomplete="off">
                                         </div>
                                         <div class="col-auto">
-                                            <button type="button" id="set-coordinates-button" class="btn btn-primary" onclick="setBaseCoordinates()">Задать координаты</button>
+                                            <button type="button" id="set-coordinates-button" class="btn btn-primary" onclick="setBaseCoordinates()">Set Coordinates</button>
                                         </div>
                                     </div>
                                     <div id="coordinates-status" class="small mt-2" role="status" aria-live="polite"></div>
