@@ -236,6 +236,6 @@ void uart_query_mode(void) {
     mode_coordinate_h[0] = '\0';
     portEXIT_CRITICAL(&mode_response_mux);
 
-    char command[] = "MODE\\r\\n";
+    char command[] = "MODE\r\n";
     uart_write(command, sizeof(command) - 1);
 }
