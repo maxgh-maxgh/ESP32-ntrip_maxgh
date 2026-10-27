@@ -65,8 +65,8 @@ static char mode_coordinate_h[32] = "";
 
 static void mode_response_process_line(const char *line) {
     if (strstr(line, "#MODE") == NULL &&
-        strstr(line, "MODE ROVER") == NULL &&
-        strstr(line, "MODE BASE TIME") == NULL) {
+        strstr(line, "MODE BASE") == NULL &&
+        strstr(line, "MODE ROVER") == NULL) {
         return;
     }
 
@@ -225,4 +225,17 @@ int uart_write(char *buf, size_t len) {
     esp_event_post(UART_EVENT_WRITE, len, buf, len, portMAX_DELAY);
 
     return written;
+}
+
+void uart_query_mode(void) {
+    // Invalidate any earlier response before sending a fresh MODE request.
+    portENTER_CRITICAL(&mode_response_mux);
+    mode_response_received = false;
+    mode_coordinate_b[0] = '\0';
+    mode_coordinate_l[0] = '\0';
+    mode_coordinate_h[0] = '\0';
+    portEXIT_CRITICAL(&mode_response_mux);
+
+    char command[] = "MODE\\r\\n";
+    uart_write(command, sizeof(command) - 1);
 }
