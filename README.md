@@ -32,12 +32,7 @@ Based on [nebkat/esp32-xbee](https://github.com/nebkat/esp32-xbee), heavily modi
 
 **Power supply note:** The ESP32 and UM980 share a 5 V rail. Add a 470 µF + 100 nF capacitor across the 5 V rail at the UM980 power pins to prevent voltage sag during WiFi TX spikes.
 
-**UM980 setup:** The receiver must be configured in BASE mode before RTCM output is available:
 
-```text
-MODE BASE
-SAVECONFIG
-```
 
 ---
 
