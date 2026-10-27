@@ -911,7 +911,8 @@
                                                     <input type="text" inputmode="decimal" id="coordinate-h" class="form-control coordinate-value" placeholder="Height" autocomplete="off">
                                                 </div>
                                                 <div class="col-md-auto mt-3 mt-md-0">
-                                                    <button type="button" id="set-coordinates-button" class="btn btn-primary" onclick="setBaseCoordinates()">Set Coordinates</button>
+                                                    <button type="button" id="query-coordinates-button" class="btn btn-secondary" onclick="queryBaseCoordinates()">Query</button>
+                                                    <button type="button" id="set-coordinates-button" class="btn btn-primary ml-2" onclick="setBaseCoordinates()">Set Coordinates</button>
                                                 </div>
                                             </div>
                                             <div id="coordinates-status" class="small mt-2" role="status" aria-live="polite"></div>
@@ -1123,6 +1124,62 @@
                 if (modePollAttempts >= 30) clearInterval(modePoll);
             }, 1000);
         });
+
+        function queryBaseCoordinates() {
+            const button = document.getElementById('query-coordinates-button');
+            const status = document.getElementById('coordinates-status');
+
+            // Clear previous values so a non-BASE response cannot leave stale coordinates visible.
+            $('#coordinate-b, #coordinate-l, #coordinate-h').val('');
+            button.disabled = true;
+            status.className = 'small mt-2 text-muted';
+            status.textContent = 'Querying coordinates from the device...';
+
+            $.ajax({
+                url: '/base_coordinates',
+                type: 'POST'
+            }).done(function() {
+                let attempts = 0;
+                let completed = false;
+
+                const pollForModeResponse = function() {
+                    $.getJSON('/base_coordinates').done(function(data) {
+                        if (!data.received) return;
+
+                        completed = true;
+                        $('#coordinate-b').val(data.b || '');
+                        $('#coordinate-l').val(data.l || '');
+                        $('#coordinate-h').val(data.h || '');
+
+                        status.className = 'small mt-2 ' +
+                            (data.b && data.l && data.h ? 'text-success' : 'text-muted');
+                        status.textContent = data.b && data.l && data.h
+                            ? 'Coordinates received from the device.'
+                            : 'Device responded, but no base coordinates are available.';
+                        button.disabled = false;
+                    }).always(function() {
+                        if (completed) return;
+
+                        attempts++;
+                        if (attempts >= 20) {
+                            completed = true;
+                            button.disabled = false;
+                            status.className = 'small mt-2 text-danger';
+                            status.textContent = 'No response to MODE was received. Please try again.';
+                            return;
+                        }
+
+                        setTimeout(pollForModeResponse, 250);
+                    });
+                };
+
+                pollForModeResponse();
+            }).fail(function(xhr) {
+                button.disabled = false;
+                status.className = 'small mt-2 text-danger';
+                status.textContent = 'Failed to query coordinates: ' + (xhr.responseText || 'Unknown error');
+            });
+        }
 
         function setBaseCoordinates() {
             const b = document.getElementById('coordinate-b').value.trim();
