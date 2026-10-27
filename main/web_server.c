@@ -954,6 +954,14 @@ static esp_err_t base_coordinates_get_handler(httpd_req_t *req) {
     return json_response(req, root);
 }
 
+static esp_err_t base_coordinates_query_post_handler(httpd_req_t *req) {
+    if (check_auth(req) == ESP_FAIL) return ESP_FAIL;
+
+    uart_query_mode();
+    httpd_resp_sendstr(req, "MODE query sent");
+    return ESP_OK;
+}
+
 static esp_err_t serial_post_handler(httpd_req_t *req) {
     if (check_auth(req) == ESP_FAIL) return ESP_FAIL;
 
@@ -1163,7 +1171,7 @@ static httpd_handle_t web_server_start(void)
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
-    config.max_uri_handlers = 12;
+    config.max_uri_handlers = 14;
 
     // Start the httpd server
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
@@ -1180,6 +1188,7 @@ static httpd_handle_t web_server_start(void)
 
         register_uri_handler(server, "/send_serial", HTTP_POST, serial_post_handler);
         register_uri_handler(server, "/base_coordinates", HTTP_GET, base_coordinates_get_handler);
+        register_uri_handler(server, "/base_coordinates", HTTP_POST, base_coordinates_query_post_handler);
 
         register_uri_handler(server, "/ota", HTTP_GET, ota_page_handler);
         register_uri_handler(server, "/ota", HTTP_POST, ota_upload_handler);
