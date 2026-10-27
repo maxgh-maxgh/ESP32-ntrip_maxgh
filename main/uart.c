@@ -20,6 +20,9 @@
 #include <esp_event.h>
 #include <esp_log.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <protocol/nmea.h>
 #include <stream_stats.h>
 
@@ -52,6 +55,65 @@ static int uart_port = -1;
 static bool uart_log_forward = false;
 
 static stream_stats_handle_t stream_stats;
+
+/* Last MODE response, parsed from incoming UART text. */
+static portMUX_TYPE mode_response_mux = portMUX_INITIALIZER_UNLOCKED;
+static bool mode_response_received = false;
+static char mode_coordinate_b[32] = "";
+static char mode_coordinate_l[32] = "";
+static char mode_coordinate_h[32] = "";
+
+static void mode_response_process_line(const char *line) {
+    if (strstr(line, "#MODE") == NULL &&
+        strstr(line, "MODE ROVER") == NULL &&
+        strstr(line, "MODE BASE TIME") == NULL) {
+        return;
+    }
+
+    char b[32] = "";
+    char l[32] = "";
+    char h[32] = "";
+    const char *mode = strstr(line, "MODE BASE ");
+
+    if (mode != NULL) {
+        mode += strlen("MODE BASE ");
+        char *end_b;
+        char *end_l;
+        char *end_h;
+        double vb = strtod(mode, &end_b);
+        double vl = strtod(end_b, &end_l);
+        double vh = strtod(end_l, &end_h);
+
+        bool valid = end_b != mode && end_l != end_b && end_h != end_l;
+        if (valid) {
+            while (*end_h == ' ' || *end_h == '\t') end_h++;
+            valid = (*end_h == ',' || *end_h == '*' || *end_h == '\0' ||
+                     *end_h == '\r' || *end_h == '\n');
+        }
+        if (valid) {
+            snprintf(b, sizeof(b), "%.11f", vb);
+            snprintf(l, sizeof(l), "%.11f", vl);
+            snprintf(h, sizeof(h), "%.6f", vh);
+        }
+    }
+
+    portENTER_CRITICAL(&mode_response_mux);
+    mode_response_received = true;
+    strlcpy(mode_coordinate_b, b, sizeof(mode_coordinate_b));
+    strlcpy(mode_coordinate_l, l, sizeof(mode_coordinate_l));
+    strlcpy(mode_coordinate_h, h, sizeof(mode_coordinate_h));
+    portEXIT_CRITICAL(&mode_response_mux);
+}
+
+void uart_get_mode_response(bool *received, char *b, size_t b_size,
+                            char *l, size_t l_size, char *h, size_t h_size) {
+    portENTER_CRITICAL(&mode_response_mux);
+    if (received) *received = mode_response_received;
+    if (b && b_size) strlcpy(b, mode_coordinate_b, b_size);
+    if (l && l_size) strlcpy(l, mode_coordinate_l, l_size);
+    if (h && h_size) strlcpy(h, mode_coordinate_h, h_size);
+    portEXIT_CRITICAL(&mode_response_mux);
+}
 
 static void uart_task(void *ctx);
 
@@ -97,17 +159,33 @@ void uart_init() {
 
 static void uart_task(void *ctx) {
     uint8_t buffer[UART_BUFFER_SIZE];
+    static char response_line[512];
+    static size_t response_line_len = 0;
 
     while (true) {
         int32_t len = uart_read_bytes(uart_port, buffer, sizeof(buffer), pdMS_TO_TICKS(50));
         if (len < 0) {
             ESP_LOGE(TAG, "Error reading from UART");
+            continue;
         } else if (len == 0) {
             continue;
         }
 
-        stream_stats_increment(stream_stats, len, 0);
+        /* Parse complete UART lines independently of read chunk boundaries. */
+        for (int32_t i = 0; i < len; i++) {
+            char ch = (char) buffer[i];
+            if (ch == '\n') {
+                response_line[response_line_len] = '\0';
+                mode_response_process_line(response_line);
+                response_line_len = 0;
+            } else if (response_line_len < sizeof(response_line) - 1) {
+                response_line[response_line_len++] = ch;
+            } else {
+                response_line_len = 0;
+            }
+        }
 
+        stream_stats_increment(stream_stats, len, 0);
         esp_event_post(UART_EVENT_READ, len, &buffer, len, portMAX_DELAY);
     }
 }
